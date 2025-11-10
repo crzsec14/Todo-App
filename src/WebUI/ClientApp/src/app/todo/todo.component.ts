@@ -1,11 +1,16 @@
-import { Component, TemplateRef, OnInit } from '@angular/core';
+import { Component, OnInit, TemplateRef } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { BsModalRef, BsModalService } from 'ngx-bootstrap/modal';
 import {
-  TodoListsClient, TodoItemsClient,
-  TodoListDto, TodoItemDto, PriorityLevelDto,
-  CreateTodoListCommand, UpdateTodoListCommand,
-  CreateTodoItemCommand, UpdateTodoItemDetailCommand
+  CreateTodoItemCommand,
+  CreateTodoListCommand,
+  PriorityLevelDto,
+  TodoItemDto,
+  TodoItemsClient,
+  TodoListDto,
+  TodoListsClient,
+  UpdateTodoItemDetailCommand,
+  UpdateTodoListCommand
 } from '../web-api-client';
 
 @Component({
@@ -32,9 +37,14 @@ export class TodoComponent implements OnInit {
     id: [null],
     listId: [null],
     priority: [''],
-    note: ['']
+    note: [''],
+    colour: ['']
   });
 
+  colors: {
+      name: string,
+      code: string
+    }[];
 
   constructor(
     private listsClient: TodoListsClient,
@@ -44,6 +54,11 @@ export class TodoComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
+    this.initializeTodoList();
+    this.initializeColors();
+  }
+
+  initializeTodoList(){
     this.listsClient.get().subscribe(
       result => {
         this.lists = result.lists;
@@ -54,6 +69,19 @@ export class TodoComponent implements OnInit {
       },
       error => console.error(error)
     );
+  }
+
+  initializeColors(){
+    this.colors = [
+      {name: 'White', code: '#FFFFFF'},
+      {name: 'Red', code: '#FF5733'},
+      {name: 'Orange', code: '#FFC300'},
+      {name: 'Yellow', code: '#FFFF66'},
+      {name: 'Green', code: '#CCFF99'},
+      {name: 'Blue', code: '#6666FF'},
+      {name: 'Purple', code: '#9966CC'},
+      {name: 'Grey', code: '#999999'}
+    ]
   }
 
   // Lists
@@ -138,6 +166,10 @@ export class TodoComponent implements OnInit {
   // Items
   showItemDetailsModal(template: TemplateRef<any>, item: TodoItemDto): void {
     this.selectedItem = item;
+    console.log(item);
+    if(!this.selectedItem.colour){
+      this.selectedItem.colour = this.colors[0].code;
+    }
     this.itemDetailsFormGroup.patchValue(this.selectedItem);
 
     this.itemDetailsModalRef = this.modalService.show(template);
@@ -165,6 +197,7 @@ export class TodoComponent implements OnInit {
         this.selectedItem.note = item.note;
         this.itemDetailsModalRef.hide();
         this.itemDetailsFormGroup.reset();
+        this.initializeTodoList();
       },
       error => console.error(error)
     );
@@ -200,8 +233,7 @@ export class TodoComponent implements OnInit {
     if (item.id === 0) {
       this.itemsClient
         .create({
-          ...item, listId: this.selectedList.id
-        } as CreateTodoItemCommand)
+          ...item, listId: this.selectedList.id} as CreateTodoItemCommand)
         .subscribe(
           result => {
             item.id = result;
@@ -260,5 +292,9 @@ export class TodoComponent implements OnInit {
     clearInterval(this.deleteCountDownInterval);
     this.deleteCountDown = 0;
     this.deleting = false;
+  }
+
+  onColorChange(){
+
   }
 }
